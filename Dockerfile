@@ -1,18 +1,21 @@
 FROM denoland/deno:alpine-2.1.10
 
-RUN mkdir /app/
-COPY . /app/
-WORKDIR /app/
+# Create app directory and set permissions early
+WORKDIR /app
 
-# Prefer not to run as root.
+# Copy files as root first
+COPY . .
+
+# Set proper ownership for the app directory
+RUN chown -R deno:deno /app
+
+# Switch to deno user
 USER deno
 
-# These steps will be re-run upon each file change in your working directory:
-COPY . .
-# deno install installs your dependencies at lightning speed
 RUN deno install
 
-# The port that your application listens to.
+# The port that your application listens to
 EXPOSE 8080
 
-CMD ["task", "main"]
+# Run the application using task
+CMD ["deno", "task", "main"]
