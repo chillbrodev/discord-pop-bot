@@ -8,11 +8,14 @@ import { REST } from "@discord/rest";
 import { ListFlagsHandler } from "./command-handlers/list-flags/list-flags-handler.ts";
 import { EmbedBuilder } from "@discord/builders";
 import { ResetFlagsHandler } from "./command-handlers/reset-flags/reset-flags-handler.ts";
+import { GuildProgressHandler } from "./command-handlers/guild-progress/guild-progress-handler.ts";
+import { popFlags } from "./flags/flags.ts";
 
 const db: DatabaseInterface = DatabaseFactory.createDatabase(configs);
 const helpHandler = new HelpHandler();
 const listFlagsHandler = new ListFlagsHandler();
 const resetFlagsHandler = new ResetFlagsHandler(db);
+const guildProgressHandler = new GuildProgressHandler(db, popFlags);
 
 // Initialize client with necessary intents
 const client = new Discord.Client({
@@ -59,6 +62,7 @@ client.once("ready", async () => {
         helpHandler.discordCommand,
         listFlagsHandler.discordCommand,
         resetFlagsHandler.discordCommand,
+        guildProgressHandler.discordCommand,
       ],
     });
 
@@ -74,11 +78,9 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
   const { commandName } = interaction;
 
   // Defer reply for commands that might take longer to process
-  // if (
-  //   [nextStepsCommand.name, guildProgressCommand.name].includes(commandName)
-  // ) {
-  //   await interaction.deferReply();
-  // }
+  if ([guildProgressHandler.name].includes(commandName)) {
+    await interaction.deferReply();
+  }
 
   const targetUser = interaction.user;
   const userId = targetUser.id;
@@ -128,6 +130,35 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
       } else {
         await interaction.reply("Failed to reset your flags.");
       }
+      break;
+    }
+
+    case guildProgressHandler.name: {
+      const report = await guildProgressHandler.guildProgressReport(guildId);
+      if (!report) {
+        await interaction.editReply(
+          "No players in this server have tracked any PoP flags yet."
+        );
+        return;
+      }
+
+      // Create a nice embed
+      const progressEmbed = new EmbedBuilder()
+        .setTitle(`Planes of Power Guild Progress Report`)
+        .setDescription(
+          `Total Players Tracking: ${report.guildProgress} | Quarm Slayers: ${report.quarmSlayers}`
+        )
+        .setColor(0x7289da)
+        .setTimestamp();
+
+      progressEmbed.addFields({
+        name: "Top Players",
+        value: report.playerList,
+        inline: false,
+      });
+
+      await interaction.editReply({ embeds: [progressEmbed] });
+
       break;
     }
   }
