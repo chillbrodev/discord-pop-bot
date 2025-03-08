@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from "@discord/builders";
-import { DatabaseInterface } from "../../db/index.ts";
 import { GuildProgressReport } from "./guild-progress-report.ts";
 import { Flag } from "../../flags/flags.ts";
+import { DatabaseInterface } from "../../db/db-interface.ts";
 
 export class GuildProgressHandler {
   readonly discordCommand: SlashCommandBuilder;

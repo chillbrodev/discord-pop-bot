@@ -1,4 +1,6 @@
-export { popFlags, popFlagsLookup, tiers };
+import { PlayerFlag } from "../db/model/player-models.ts";
+
+export { popFlags, popFlagsLookup, tiers, isQuarmFlag };
 export type { Flag, Tier };
 
 interface Tier {
@@ -414,3 +416,22 @@ popFlags.forEach((flag) => {
     dependsOn: flag.dependsOn,
   };
 });
+
+const isQuarmFlag = (flag: Flag): boolean => flag.id === "quarm";
+
+export function filterAvailablePlayerFlags(
+  playerFlags: PlayerFlag[]
+): (value: Flag, index: number, array: Flag[]) => unknown {
+  return (flag) => {
+    // Skip already completed flags
+    const completedFlag = playerFlags.filter(
+      (pFlag) => pFlag.flag_key === flag.id && pFlag.completed
+    );
+    if (completedFlag.length === 1) return false;
+
+    // Check if all dependencies are met
+    return flag.dependsOn.every((dep) =>
+      playerFlags.some((pFlag) => pFlag.flag_key === dep && pFlag.completed)
+    );
+  };
+}

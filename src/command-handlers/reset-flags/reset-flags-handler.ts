@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "@discord/builders";
-import { DatabaseInterface } from "../../db/index.ts";
+import { DatabaseInterface } from "../../db/db-interface.ts";
 
 export class ResetFlagsHandler {
   readonly discordCommand: SlashCommandBuilder;

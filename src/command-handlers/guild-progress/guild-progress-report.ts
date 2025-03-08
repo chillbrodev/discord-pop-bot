@@ -1,4 +1,4 @@
-import { PlayerProgress } from "../../db/index.ts";
+import { PlayerProgress } from "../../db/model/player-models.ts";
 
 export interface GuildProgressReport {
   quarmSlayers: number;

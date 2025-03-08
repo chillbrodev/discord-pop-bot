@@ -1,7 +1,8 @@
 import { SlashCommandBuilder } from "@discord/builders";
-import { DatabaseInterface } from "../../db/index.ts";
-import { Flag } from "../../flags/flags.ts";
+import { filterAvailablePlayerFlags, Flag } from "../../flags/flags.ts";
 import { NextStepsReport } from "./next-steps-report.ts";
+import { DatabaseInterface } from "../../db/db-interface.ts";
+import { PlayerFlag } from "../../db/model/player-models.ts";
 
 export class NextStepsHandler {
   readonly discordCommand: SlashCommandBuilder;
@@ -21,22 +22,14 @@ export class NextStepsHandler {
     userId: string,
     guildId: string
   ): Promise<NextStepsReport> {
-    const playerFlags = await this.dbInterface.getPlayerFlags(userId, guildId);
+    const playerFlags: PlayerFlag[] = await this.dbInterface.getPlayerFlags(
+      userId,
+      guildId
+    );
 
     // Find flags that can be completed next (all dependencies satisfied)
     const availableFlags = this.popFlags
-      .filter((flag) => {
-        // Skip already completed flags
-        const completedFlag = playerFlags.filter(
-          (pFlag) => pFlag.flag_key === flag.id && pFlag.completed
-        );
-        if (completedFlag.length === 1) return false;
-
-        // Check if all dependencies are met
-        return flag.dependsOn.every((dep) =>
-          playerFlags.some((pFlag) => pFlag.flag_key === dep && pFlag.completed)
-        );
-      })
+      .filter(filterAvailablePlayerFlags(playerFlags))
       .map((flag) => `- **${flag.name}**: ${flag.description}`);
 
     if (availableFlags.length === 0) {
