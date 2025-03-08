@@ -1,0 +1,33 @@
+{
+  "tasks": {
+    "main": "deno run --allow-net --allow-read --allow-env --allow-sys --allow-run src/main.ts",
+    "test": "deno test --allow-sys ."
+  },
+  "fmt": {
+    "lineWidth": 120,
+    "semiColons": true,
+    "singleQuote": true,
+    "proseWrap": "preserve",
+    "include": [
+      "src/"
+    ],
+    "exclude": [
+      "src/testdata/",
+      "README.md",
+      ".vscode/",
+      "deno.jsonc"
+    ]
+  },
+  "imports": {
+    "@std/assert": "jsr:@std/assert@1",
+    "@std/dotenv": "jsr:@std/dotenv@^0.225.3",
+    "@std/expect": "jsr:@std/expect@^1.0.13",
+    "@std/http": "jsr:@std/http@^1.0.13",
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.49.1",
+    "@discord": "npm:discord.js@^14.18.0",
+    "@discord/rest": "npm:@discordjs/rest@^2.4.3",
+    "@discord/builders": "npm:@discordjs/builders@^1.10.1",
+    "discord/types": "npm:discord-api-types@^0.37.119/v10",
+    "@std/testing": "jsr:@std/testing@^1.0.8"
+  }
+}
