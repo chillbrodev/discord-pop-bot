@@ -19,9 +19,9 @@ describe('HelpHandler', () => {
     expect(helpMessage).toBe(
       `
 * /pop-help - Shows the following commands
-* /pop-trackflag player:[optional] - Mark the selected flag as completed for you or another player.
+* /pop-trackflag player - Mark the selected flag as completed for you.
 * /pop-resetflags - Reset all your PoP flags (only works on yourself).
-* /pop-nextsteps player:[optional] - See what flags are available to complete next.
+* /pop-nextsteps player - See what flags are available to complete next.
 * /pop-guildprogress - See the progess percentage of each guild player.
 `,
     );
