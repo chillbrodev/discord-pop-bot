@@ -7,10 +7,12 @@ import { GatewayIntentBits, Routes } from "discord/types";
 import { REST } from "@discord/rest";
 import { ListFlagsHandler } from "./command-handlers/list-flags/list-flags-handler.ts";
 import { EmbedBuilder } from "@discord/builders";
+import { ResetFlagsHandler } from "./command-handlers/reset-flags/reset-flags-handler.ts";
 
 const db: DatabaseInterface = DatabaseFactory.createDatabase(configs);
 const helpHandler = new HelpHandler();
 const listFlagsHandler = new ListFlagsHandler();
+const resetFlagsHandler = new ResetFlagsHandler(db);
 
 // Initialize client with necessary intents
 const client = new Discord.Client({
@@ -53,7 +55,11 @@ client.once("ready", async () => {
     // Then register the new commands
     console.log("Registering new commands...");
     await rest.put(Routes.applicationCommands(userId), {
-      body: [helpHandler.discordCommand, listFlagsHandler.discordCommand],
+      body: [
+        helpHandler.discordCommand,
+        listFlagsHandler.discordCommand,
+        resetFlagsHandler.discordCommand,
+      ],
     });
 
     console.log("Successfully reloaded application commands.");
@@ -112,6 +118,17 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
         .setDescription(flagList)
         .setColor(0x0099ff);
       await interaction.reply({ embeds: [flagEmbed] });
+      break;
+    }
+
+    case resetFlagsHandler.name: {
+      const resetSuccess = await resetFlagsHandler.resetFlags(userId, guildId);
+      if (resetSuccess) {
+        await interaction.reply("Your flags have been reset.");
+      } else {
+        await interaction.reply("Failed to reset your flags.");
+      }
+      break;
     }
   }
 });
