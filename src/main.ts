@@ -13,7 +13,7 @@ import { isQuarmFlag, popFlags, popFlagsLookup } from "./flags/flags.ts";
 import { NextStepsHandler } from "./command-handlers/next-steps/next-steps-handler.ts";
 import { TrackFlagHandler } from "./command-handlers/track-flag/track-flag-handler.ts";
 import { ActionRowBuilder, StringSelectMenuBuilder } from "@discord/builders";
-
+import { route, type Route } from "@std/http/unstable-route";
 const db: DatabaseInterface = DatabaseFactory.createDatabase(configs);
 const helpHandler = new HelpHandler();
 const listFlagsHandler = new ListFlagsHandler();
@@ -282,3 +282,18 @@ client.on("error", (error: unknown) => {
 
 // Login to Discord
 client.login(configs.token);
+
+const routes: Route[] = [
+  {
+    method: ["GET"],
+    pattern: new URLPattern({ pathname: "/heart" }),
+    handler: () => new Response("Beat"),
+  },
+];
+
+function defaultHandler(_req: Request) {
+  return new Response("Not found", { status: 404 });
+}
+
+const PORT = Number(Deno.env.get("PORT")) || 8000;
+Deno.serve({ port: PORT }, route(routes, defaultHandler));
