@@ -10,12 +10,14 @@ import { EmbedBuilder } from "@discord/builders";
 import { ResetFlagsHandler } from "./command-handlers/reset-flags/reset-flags-handler.ts";
 import { GuildProgressHandler } from "./command-handlers/guild-progress/guild-progress-handler.ts";
 import { popFlags } from "./flags/flags.ts";
+import { NextStepsHandler } from "./command-handlers/next-steps/next-steps-handler.ts";
 
 const db: DatabaseInterface = DatabaseFactory.createDatabase(configs);
 const helpHandler = new HelpHandler();
 const listFlagsHandler = new ListFlagsHandler();
 const resetFlagsHandler = new ResetFlagsHandler(db);
 const guildProgressHandler = new GuildProgressHandler(db, popFlags);
+const nextStepsHandler = new NextStepsHandler(db, popFlags);
 
 // Initialize client with necessary intents
 const client = new Discord.Client({
@@ -63,6 +65,7 @@ client.once("ready", async () => {
         listFlagsHandler.discordCommand,
         resetFlagsHandler.discordCommand,
         guildProgressHandler.discordCommand,
+        nextStepsHandler.discordCommand,
       ],
     });
 
@@ -78,7 +81,9 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
   const { commandName } = interaction;
 
   // Defer reply for commands that might take longer to process
-  if ([guildProgressHandler.name].includes(commandName)) {
+  if (
+    [nextStepsHandler.name, guildProgressHandler.name].includes(commandName)
+  ) {
     await interaction.deferReply();
   }
 
@@ -159,6 +164,29 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 
       await interaction.editReply({ embeds: [progressEmbed] });
 
+      break;
+    }
+
+    case nextStepsHandler.name: {
+      const report = await nextStepsHandler.nextStepsReport(userId, guildId);
+      if (report.availableFlags.length === 0) {
+        if (report.popComplete) {
+          await interaction.editReply(
+            "🎉 You have completed all Planes of Power content including Quarm!"
+          );
+          return;
+        }
+      } else {
+        await interaction.editReply({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle(`${displayName}'s Next Available Flags`)
+              .setDescription(report.availableFlags.join("\n"))
+              .setColor(0x00ff00)
+              .setTimestamp(),
+          ],
+        });
+      }
       break;
     }
   }
