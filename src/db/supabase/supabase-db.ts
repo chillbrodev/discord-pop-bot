@@ -1,29 +1,39 @@
 // Supabase database integration for EverQuest PoP Tracker Bot
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Config } from '../../config.ts';
-import { PlayerData, PlayerFlag, PlayerProgress } from '../model/player-models.ts';
-import { DatabaseInterface } from '../db-interface.ts';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { getDenoEnvValueOrThrow } from "../../config.ts";
+import {
+  PlayerData,
+  PlayerFlag,
+  PlayerProgress,
+} from "../model/player-models.ts";
+import { DatabaseInterface } from "../db-interface.ts";
 
 export class SupabaseDB implements DatabaseInterface {
   private supabase: SupabaseClient;
 
-  constructor(config: Config) {
-    this.supabase = createClient(config.supabaseUrl, config.supabaseKey);
+  constructor() {
+    const supabaseUrl = getDenoEnvValueOrThrow("SUPABASE_URL");
+    const supabaseKey = getDenoEnvValueOrThrow("SUPABASE_KEY");
+    this.supabase = createClient(supabaseUrl, supabaseKey);
   }
 
   // Initialize player in DB if they don't exist
-  async initPlayer(userId: string, guildId: string, displayName: string): Promise<boolean> {
+  async initPlayer(
+    userId: string,
+    guildId: string,
+    displayName: string
+  ): Promise<boolean> {
     const { data, error } = await this.supabase
-      .from('player_data')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('guild_id', guildId)
+      .from("player_data")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("guild_id", guildId)
       .single();
 
     if (error || !data) {
       // Create new player record
       const { error: insertError } = await this.supabase
-        .from('player_data')
+        .from("player_data")
         .insert({
           user_id: userId,
           guild_id: guildId,
@@ -32,23 +42,23 @@ export class SupabaseDB implements DatabaseInterface {
         });
 
       if (insertError) {
-        console.error('Error creating player:', insertError);
+        console.error("Error creating player:", insertError);
         return false;
       }
 
       // Add knowledge flag by default
-      await this.setFlag(userId, guildId, 'knowledge', true);
+      await this.setFlag(userId, guildId, "knowledge", true);
     } else {
       // Update display name if it changed
       if (data.display_name !== displayName) {
         await this.supabase
-          .from('player_data')
+          .from("player_data")
           .update({
             display_name: displayName,
             last_updated: new Date().toISOString(),
           })
-          .eq('user_id', userId)
-          .eq('guild_id', guildId);
+          .eq("user_id", userId)
+          .eq("guild_id", guildId);
       }
     }
 
@@ -58,28 +68,30 @@ export class SupabaseDB implements DatabaseInterface {
   // Get all flag status for a player
   async getPlayerFlags(userId: string, guildId: string): Promise<PlayerFlag[]> {
     const { data, error } = await this.supabase
-      .from('player_flags')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('guild_id', guildId);
+      .from("player_flags")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("guild_id", guildId);
 
     if (error) {
-      console.error('Error fetching player flags:', error);
+      console.error("Error fetching player flags:", error);
       return [];
     }
 
     // Ensure knowledge flag exists
-    const hasKnowledge = data.some((flag: PlayerFlag) => flag.flag_key === 'knowledge');
+    const hasKnowledge = data.some(
+      (flag: PlayerFlag) => flag.flag_key === "knowledge"
+    );
     if (!hasKnowledge) {
       // Add knowledge flag if it doesn't exist
-      this.setFlag(userId, guildId, 'knowledge', true);
+      this.setFlag(userId, guildId, "knowledge", true);
 
       // Add knowledge flag to the returned data
       const now = new Date().toISOString();
       data.push({
         user_id: userId,
         guild_id: guildId,
-        flag_key: 'knowledge',
+        flag_key: "knowledge",
         completed: true,
         completed_at: now,
       });
@@ -89,14 +101,19 @@ export class SupabaseDB implements DatabaseInterface {
   }
 
   // Set flag status for a player
-  async setFlag(userId: string, guildId: string, flagKey: string, completed: boolean): Promise<boolean> {
+  async setFlag(
+    userId: string,
+    guildId: string,
+    flagKey: string,
+    completed: boolean
+  ): Promise<boolean> {
     // Check if flag already exists
     const { data, error } = await this.supabase
-      .from('player_flags')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('guild_id', guildId)
-      .eq('flag_key', flagKey)
+      .from("player_flags")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("guild_id", guildId)
+      .eq("flag_key", flagKey)
       .single();
 
     const timestamp = new Date().toISOString();
@@ -104,7 +121,7 @@ export class SupabaseDB implements DatabaseInterface {
     if (error || !data) {
       // Create new flag
       const { error: insertError } = await this.supabase
-        .from('player_flags')
+        .from("player_flags")
         .insert({
           user_id: userId,
           guild_id: guildId,
@@ -114,33 +131,33 @@ export class SupabaseDB implements DatabaseInterface {
         });
 
       if (insertError) {
-        console.error('Error setting flag:', insertError);
+        console.error("Error setting flag:", insertError);
         return false;
       }
     } else {
       // Update existing flag
       const { error: updateError } = await this.supabase
-        .from('player_flags')
+        .from("player_flags")
         .update({
           completed: completed,
           completed_at: completed ? timestamp : null,
         })
-        .eq('user_id', userId)
-        .eq('guild_id', guildId)
-        .eq('flag_key', flagKey);
+        .eq("user_id", userId)
+        .eq("guild_id", guildId)
+        .eq("flag_key", flagKey);
 
       if (updateError) {
-        console.error('Error updating flag:', updateError);
+        console.error("Error updating flag:", updateError);
         return false;
       }
     }
 
     // Update last_updated in player_data
     await this.supabase
-      .from('player_data')
+      .from("player_data")
       .update({ last_updated: timestamp })
-      .eq('user_id', userId)
-      .eq('guild_id', guildId);
+      .eq("user_id", userId)
+      .eq("guild_id", guildId);
 
     return true;
   }
@@ -149,26 +166,26 @@ export class SupabaseDB implements DatabaseInterface {
   async resetFlags(userId: string, guildId: string): Promise<boolean> {
     // Delete all flags except knowledge
     const { error } = await this.supabase
-      .from('player_flags')
+      .from("player_flags")
       .delete()
-      .eq('user_id', userId)
-      .eq('guild_id', guildId)
-      .neq('flag_key', 'knowledge');
+      .eq("user_id", userId)
+      .eq("guild_id", guildId)
+      .neq("flag_key", "knowledge");
 
     if (error) {
-      console.error('Error resetting flags:', error);
+      console.error("Error resetting flags:", error);
       return false;
     }
 
     // Ensure knowledge flag is set
-    await this.setFlag(userId, guildId, 'knowledge', true);
+    await this.setFlag(userId, guildId, "knowledge", true);
 
     // Update last_updated in player_data
     await this.supabase
-      .from('player_data')
+      .from("player_data")
       .update({ last_updated: new Date().toISOString() })
-      .eq('user_id', userId)
-      .eq('guild_id', guildId);
+      .eq("user_id", userId)
+      .eq("guild_id", guildId);
 
     return true;
   }
@@ -176,10 +193,10 @@ export class SupabaseDB implements DatabaseInterface {
   // Get player's last updated timestamp
   async getLastUpdated(userId: string, guildId: string): Promise<Date> {
     const { data, error } = await this.supabase
-      .from('player_data')
-      .select('last_updated')
-      .eq('user_id', userId)
-      .eq('guild_id', guildId)
+      .from("player_data")
+      .select("last_updated")
+      .eq("user_id", userId)
+      .eq("guild_id", guildId)
       .single();
 
     if (error || !data) {
@@ -193,24 +210,24 @@ export class SupabaseDB implements DatabaseInterface {
   async getGuildProgress(guildId: string): Promise<PlayerProgress[]> {
     // Get all players in the guild
     const { data: players, error: playerError } = await this.supabase
-      .from('player_data')
-      .select('*')
-      .eq('guild_id', guildId);
+      .from("player_data")
+      .select("*")
+      .eq("guild_id", guildId);
 
     if (playerError || !players) {
-      console.error('Error fetching guild players:', playerError);
+      console.error("Error fetching guild players:", playerError);
       return [];
     }
 
     // Get all flags for all users in the guild
     const { data: flags, error: flagError } = await this.supabase
-      .from('player_flags')
-      .select('*')
-      .eq('guild_id', guildId)
-      .eq('completed', true);
+      .from("player_flags")
+      .select("*")
+      .eq("guild_id", guildId)
+      .eq("completed", true);
 
     if (flagError || !flags) {
-      console.error('Error fetching guild flags:', flagError);
+      console.error("Error fetching guild flags:", flagError);
       return [];
     }
 
@@ -225,13 +242,13 @@ export class SupabaseDB implements DatabaseInterface {
 
     // Combine data
     return players.map((player: PlayerData) => {
-      const userFlags = flagsByUser[player.user_id] || ['knowledge'];
+      const userFlags = flagsByUser[player.user_id] || ["knowledge"];
       return {
         userId: player.user_id,
         displayName: player.display_name,
         lastUpdated: player.last_updated,
         flagsCompleted: userFlags.length,
-        quarmDefeated: userFlags.includes('quarm'),
+        quarmDefeated: userFlags.includes("quarm"),
       };
     });
   }
