@@ -14,10 +14,11 @@ export class HelpHandler {
   printHelp(): string {
     return `
 * /pop-help - Shows the following commands
-* /pop-trackflag player - Mark the selected flag as completed for you.
+* /pop-trackflag - Mark the selected flag as completed for you.
 * /pop-resetflags - Reset all your PoP flags (only works on yourself).
-* /pop-nextsteps player - See what flags are available to complete next.
+* /pop-nextsteps - See what flags are available to complete next.
 * /pop-guildprogress - See the progess percentage of each guild player.
+* /pop-listflags - List all the flags separated by Tier.
 `;
   }
 }

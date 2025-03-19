@@ -6,6 +6,8 @@ Built using [Deno](https://deno.land/) and Typescript. Utilizes [Supabase](https
 
 The Bot is designed for a PER Server usage, there is no interaction across servers.
 
+This Bot is based on information found at [EQProgression](https://www.eqprogression.com/planes-of-power-planar-progression-flagging/). 
+
 ## Features
 
 - 🚩 **Flag Tracking**: Track which Planes of Power flags you have completed
